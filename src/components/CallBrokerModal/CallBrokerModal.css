@@ -1,0 +1,107 @@
+.tv-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 1040; /* below modal */
+}
+
+.modal.show.d-block {
+  z-index: 1050; /* above backdrop */
+}
+
+/* Force wide modal - overrides Bootstrap's max-width with higher specificity + !important */
+.tv-modal-dialog {
+  max-width: 95vw !important;     /* Critical: override Bootstrap's max-width */
+  width: 95vw !important;
+  margin: 1.75rem auto !important;
+}
+
+/* Mobile */
+@media (max-width: 767.98px) {
+  .tv-modal-dialog {
+    width: calc(100% - 16px) !important;
+    max-width: none !important;
+    margin: 8px auto !important;
+  }
+
+  .modal-body {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .tv-modal-dialog {
+    width: 900px !important;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+  .tv-modal-dialog {
+    width: 1200px !important;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1400px) {
+  .tv-modal-dialog {
+    width: 1400px !important;
+  }
+}
+
+/* Ultrawide */
+@media (min-width: 1600px) {
+  .tv-modal-dialog {
+    width: 800px !important;   /* Very wide — adjust down if too big for you */
+  }
+}
+
+/* Better inner padding on larger screens */
+.modal-body {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+.tv-modal-content {
+  border-radius: 18px;
+  padding: 0.5rem;
+}
+
+.tv-app-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(13, 110, 253, 0.15),
+    rgba(13, 110, 253, 0.05)
+  );
+  border: 1px solid rgba(13, 110, 253, 0.25);
+}
+
+.tv-app-badge i {
+  font-size: 20px;
+}
+
+.tv-hint {
+  border-radius: 14px;
+}
+
+.tv-preview {
+  border-radius: 16px;
+  background: rgba(248, 249, 250, 0.8);
+}
+
+.tv-pre {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #0f172a;
+}
