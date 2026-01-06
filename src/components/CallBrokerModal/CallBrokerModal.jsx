@@ -3,29 +3,62 @@ import ActiveCall from "../ActiveCall/ActiveCall";
 import "./CallBrokerModal.css";
 
 const initialForm = {
+  dispatcherName: "",
+  origin: "",
+  destination: "",
   totalMileage: "",
-  priceStartFrom: "",
-  priceDontGoBelow: "",
+  deadheadMileage: "",
+  pricePerMile: "",
   tolls: "",
   pickupTime: "",
   dropoffTime: "",
-  pricePerMile: "",
   weatherForecast: "",
   mcNumber: "",
   commodity: "",
   strapsOrCover: "unknown",
-  deadheadMileage: "",
   brokerPhone: ""
 };
+
+const STATE_MAP = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa", KS: "Kansas",
+  KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland", MA: "Massachusetts",
+  MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana",
+  NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+  NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota",
+  OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island",
+  SC: "South Carolina", SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah",
+  VT: "Vermont", VA: "Virginia", WA: "Washington", WV: "West Virginia",
+  WI: "Wisconsin", WY: "Wyoming", DC: "Washington, DC"
+};
+
+function expandStateAbbrev(cityState) {
+  const s = String(cityState || "").trim();
+  if (!s) return s;
+
+  // Matches "... , GA" or "... GA" at end (tolerates extra spaces + lowercase)
+  const m = s.match(/^(.*?)(?:,\s*|\s+)([A-Za-z]{2})\s*$/);
+  if (!m) return s;
+
+  const city = String(m[1] || "").trim();
+  const abbr = String(m[2] || "").trim().toUpperCase();
+  const full = STATE_MAP[abbr];
+  if (!full) return s;
+
+  if (!city) return full; // edge case: user typed only "ga"
+  return `${city}, ${full}`;
+}
 
 function formatCallSummary(data) {
   const lines = [
     `Truck Voice App – Call Summary`,
     ``,
+    `Dispatcher: ${data.dispatcherName || "-"}`,
+    `Origin: ${data.origin || "-"}`,
+    `Destination: ${data.destination || "-"}`,
     `Total mileage A→B: ${data.totalMileage || "-"}`,
     `Deadhead mileage: ${data.deadheadMileage || "-"}`,
-    `Price start from: ${data.priceStartFrom || "-"}`,
-    `Price don't go below: ${data.priceDontGoBelow || "-"}`,
     `Price / mile: ${data.pricePerMile || "-"}`,
     `Tolls: ${data.tolls || "-"}`,
     `Pickup time: ${data.pickupTime || "-"}`,
@@ -40,27 +73,61 @@ function formatCallSummary(data) {
   return lines.join("\n");
 }
 
-export default function CallBrokerModal({
-  isOpen = true,
-  onClose,
-  onCall
-}) {
+// --- NEW: helpers for safe positioning ---
+const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+function getNextSpawnPosition(existingCallsCount) {
+  // These should roughly match your .activecall-panel size in CSS
+  const PANEL_W = 340;   // adjust if your panel is wider
+  const PANEL_H = 350;   // adjust if your panel is taller
+  const MARGIN = 12;
+  const GAP = 12;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const maxLeft = Math.max(MARGIN, vw - PANEL_W - MARGIN);
+  const maxTop = Math.max(MARGIN, vh - PANEL_H - MARGIN);
+
+  const cols = Math.max(1, Math.floor((vw - MARGIN * 2 + GAP) / (PANEL_W + GAP)));
+  const rows = Math.max(1, Math.floor((vh - MARGIN * 2 + GAP) / (PANEL_H + GAP)));
+  const slots = cols * rows;
+
+  const slotIndex = existingCallsCount % slots;
+
+  const col = slotIndex % cols;
+  const row = Math.floor(slotIndex / cols);
+
+  // Base grid position
+  let left = MARGIN + col * (PANEL_W + GAP);
+  let top = MARGIN + row * (PANEL_H + GAP);
+
+  // If we’ve exceeded visible slots, nudge within the same slot (still clamped)
+  const overflowCycles = Math.floor(existingCallsCount / slots);
+  const nudge = overflowCycles * 18; // small cascade offset
+  left += nudge;
+  top += nudge;
+
+  return {
+    left: clamp(left, MARGIN, maxLeft),
+    top: clamp(top, MARGIN, maxTop)
+  };
+}
+
+export default function CallBrokerModal({ isOpen = true, onClose, onCall }) {
   const [form, setForm] = useState(initialForm);
-  const [activeCalls, setActiveCalls] = useState([]); // Holds all active call windows
+  const [activeCalls, setActiveCalls] = useState([]);
 
   const isClosable = typeof onClose === "function";
 
-  // Lock body scroll while modal open
   useEffect(() => {
     if (!isOpen) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
   }, [isOpen]);
 
-  // Close on ESC
   useEffect(() => {
     if (!isOpen || !isClosable) return;
     const onKeyDown = (e) => {
@@ -74,50 +141,111 @@ export default function CallBrokerModal({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    let sanitizedValue = value;
+
+    if (
+      name === "totalMileage" ||
+      name === "deadheadMileage" ||
+      name === "priceStartFrom" ||
+      name === "priceDontGoBelow" ||
+      name === "pricePerMile"
+    ) {
+      sanitizedValue = value.replace(/[^0-9.]/g, "");
+      const parts = sanitizedValue.split(".");
+      if (parts.length > 2) {
+        sanitizedValue = parts[0] + "." + parts.slice(1).join("");
+      }
+      if (parts[1] && parts[1].length > 2) {
+        sanitizedValue = parts[0] + "." + parts[1].slice(0, 2);
+      }
+    } else if (name === "brokerPhone") {
+      sanitizedValue = value.replace(/[^0-9+\-\s()]/g, "");
+    }
+
+    setForm((prev) => ({ ...prev, [name]: sanitizedValue }));
   };
 
-  // Create a new active call window
-  const handleCall = () => {
+const handleCall = async () => {
+  if (!form.dispatcherName.trim()) {
+    alert("Dispatcher name is required.");
+    return;
+  }
+
+  if (!form.brokerPhone.trim()) {
+    alert("Broker phone number is required.");
+    return;
+  }
+
+  setActiveCalls((prev) => {
+    const spawnPos = getNextSpawnPosition(prev.length);
     const newCall = {
-      id: Date.now(), // Unique ID for each call
+      id: Date.now(),
       brokerName: form.mcNumber ? `Broker ${form.mcNumber}` : "Active Call",
-      origin: "Chattanooga, TN",
-      destination: "Coeur D'alene, ID",
-      rate: form.pricePerMile ? `$${form.pricePerMile}/mi` : "$2.459",
-      phone: form.brokerPhone || "(555) 123-4567"
+      origin: form.origin || "Unknown Origin",
+      destination: form.destination || "Unknown Destination",
+      rate: form.pricePerMile ? `$${form.pricePerMile}/mi` : "$?.??",
+      phone: form.brokerPhone || "(???) ???-????",
+      position: spawnPos,
+      status: "Dialing..."
     };
+    return [...prev, newCall];
+  });
 
-    setActiveCalls((prev) => [...prev, newCall]);
+  // Format phone to E.164
+  let formattedPhone = form.brokerPhone.trim();
+  if (!formattedPhone.startsWith("+")) {
+    formattedPhone = "+1" + formattedPhone.replace(/\D/g, "");
+  }
+
+  // ✅ NEW: include spoken-friendly origin/destination
+  const payloadForm = {
+    ...form,
+    origin: String(form.origin || "").trim(),
+    destination: String(form.destination || "").trim(),
+    originSpoken: expandStateAbbrev(form.origin),
+    destinationSpoken: expandStateAbbrev(form.destination)
   };
 
-  // Remove a specific call by ID
+  try {
+    const res = await fetch("/api/start-vapi-call", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brokerPhone: formattedPhone, formData: payloadForm })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setActiveCalls((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1].vapiCallId = data.callId;
+        updated[updated.length - 1].monitorUrl = data.monitorUrl || null;
+        updated[updated.length - 1].status = "Ringing...";
+        return updated;
+      });
+
+      console.log("Call started:", data.callId);
+    } else {
+      alert("Call failed: " + data.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Network error starting call");
+  }
+};
+
+
   const closeCall = (id) => {
     setActiveCalls((prev) => prev.filter((call) => call.id !== id));
-  };
-
-  // Calculate starting position: left side first, then right
-  const getInitialPosition = (index) => {
-    const panelHeight = 460; // Approx height + gap
-    const gap = 20;
-    const maxPerSide = Math.floor((window.innerHeight - 120) / panelHeight);
-
-    if (index < maxPerSide) {
-      return { top: 100 + index * panelHeight, left: 20 };
-    } else {
-      const rightIndex = index - maxPerSide;
-      return { top: 100 + rightIndex * panelHeight, right: 20 };
-    }
   };
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop for main modal */}
       <div className="tv-backdrop" />
 
-      {/* Main Call Broker Modal */}
+
       <div
         className="modal show d-block"
         role="dialog"
@@ -154,7 +282,41 @@ export default function CallBrokerModal({
               <div className="alert alert-light border tv-hint">
                 Fill out the route + pricing details so your call is confident and consistent.
               </div>
-
+              <div className="col-12 col-md-6">
+                <label className="form-label">
+                  Dispatcher name <span className="text-danger">*</span>
+                </label>
+                <input
+                  name="dispatcherName"
+                  value={form.dispatcherName}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="e.g., Rob"
+                  required
+                />
+              </div>
+            <div className="row g-3">
+                <div className="col-12 col-md-6">
+                <label className="form-label">Origin</label>
+                <input
+                    name="origin"
+                    value={form.origin}
+                    onChange={handleChange}
+                    className="form-control"
+                    placeholder="e.g., Chattanooga, TN"
+                />
+                </div>
+                <div className="col-12 col-md-6">
+                <label className="form-label">Destination</label>
+                <input
+                    name="destination"
+                    value={form.destination}
+                    onChange={handleChange}
+                    className="form-control"
+                    placeholder="e.g., Coeur D'alene, ID"
+                />
+                </div>                
+            </div>
               <div className="row g-3">
                 {/* Total mileage */}
                 <div className="col-12 col-md-6">
@@ -168,8 +330,8 @@ export default function CallBrokerModal({
                       value={form.totalMileage}
                       onChange={handleChange}
                       className="form-control"
-                      placeholder="e.g., 842"
-                      inputMode="numeric"
+                      placeholder="e.g., 842.5"
+                      inputMode="decimal"
                     />
                     <span className="input-group-text">mi</span>
                   </div>
@@ -186,43 +348,12 @@ export default function CallBrokerModal({
                       value={form.deadheadMileage}
                       onChange={handleChange}
                       className="form-control"
-                      placeholder="e.g., 48"
-                      inputMode="numeric"
+                      placeholder="e.g., 48.3"
+                      inputMode="decimal"
                     />
                     <span className="input-group-text">mi</span>
                   </div>
                 </div>
-
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Price start from</label>
-                  <div className="input-group">
-                    <span className="input-group-text">$</span>
-                    <input
-                      name="priceStartFrom"
-                      value={form.priceStartFrom}
-                      onChange={handleChange}
-                      className="form-control"
-                      placeholder="e.g., 1800"
-                      inputMode="decimal"
-                    />
-                  </div>
-                </div>
-
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Price don’t go below</label>
-                  <div className="input-group">
-                    <span className="input-group-text">$</span>
-                    <input
-                      name="priceDontGoBelow"
-                      value={form.priceDontGoBelow}
-                      onChange={handleChange}
-                      className="form-control"
-                      placeholder="e.g., 1600"
-                      inputMode="decimal"
-                    />
-                  </div>
-                </div>
-
                 <div className="col-12 col-md-6">
                   <label className="form-label">Price / mile</label>
                   <div className="input-group">
@@ -272,7 +403,6 @@ export default function CallBrokerModal({
                   />
                 </div>
 
-                {/* Weather */}
                 <div className="col-12">
                   <label className="form-label">Weather forecast (route)</label>
                   <textarea
@@ -285,7 +415,6 @@ export default function CallBrokerModal({
                   />
                 </div>
 
-                {/* MC # */}
                 <div className="col-12 col-md-6">
                   <label className="form-label">MC #</label>
                   <div className="input-group">
@@ -297,7 +426,7 @@ export default function CallBrokerModal({
                       value={form.mcNumber}
                       onChange={handleChange}
                       className="form-control"
-                      placeholder="e.g., 123456"
+                      placeholder="e.g., MC-123456 or MX12345"
                     />
                   </div>
                 </div>
@@ -314,7 +443,9 @@ export default function CallBrokerModal({
                 </div>
 
                 <div className="col-12 col-md-6">
-                  <label className="form-label">Broker phone number</label>
+                  <label className="form-label">
+                    Broker phone number <span className="text-danger">*</span>
+                  </label>
                   <div className="input-group">
                     <span className="input-group-text">
                       <i className="bi bi-telephone-fill" />
@@ -327,6 +458,7 @@ export default function CallBrokerModal({
                       placeholder="e.g., (555) 123-4567"
                       inputMode="tel"
                       autoComplete="tel"
+                      required
                     />
                   </div>
                 </div>
@@ -412,18 +544,20 @@ export default function CallBrokerModal({
         </div>
       </div>
 
-      {/* Render ALL active floating call windows */}
-      {activeCalls.map((call, index) => (
+      {/* Render all active call windows */}
+      {activeCalls.map((call) => (
         <ActiveCall
-          key={call.id}
-          callId={call.id}
-          onClose={() => closeCall(call.id)}
-          brokerName={call.brokerName}
-          origin={call.origin}
-          destination={call.destination}
-          rate={call.rate}
-          phone={call.phone}
-          initialPosition={getInitialPosition(index)}
+        key={call.id}
+        callId={call.id}
+        vapiCallId={call.vapiCallId}
+        monitorUrl={call.monitorUrl}
+        onClose={() => closeCall(call.id)}
+        brokerName={call.brokerName}
+        origin={call.origin}
+        destination={call.destination}
+        rate={call.rate}
+        phone={call.phone}
+        initialPosition={call.position}
         />
       ))}
     </>

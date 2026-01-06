@@ -1,115 +1,323 @@
 .activecall-panel {
   position: fixed;
-  width: 340px;
-  background: white;
+  width: 360px;
+  background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   z-index: 2000;
   font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
   overflow: hidden;
+
+  /* gives it the white “card” feel from screenshots */
+  border: 1px solid #efefef;
 }
 
-.activecall-content {
-  padding-bottom: 16px;
+/* when transcript is open, panel grows like screenshot */
+.activecall-panel.is-expanded {
+  width: 360px;
 }
 
-.activecall-header {
-  background: #f8f9fa;
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e9ecef;
+/* Header */
+.ac-header {
+  position: relative;
+  padding: 14px 18px 8px;
+  background: #ffffff;
 }
 
-.activecall-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  color: #212529;
+.ac-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: #111;
 }
 
-.activecall-close-btn {
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: #6c757d;
-  cursor: pointer;
-  padding: 0;
+.ac-close {
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+  color: #111;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 18px;
   line-height: 1;
+  padding: 0;
+
+  cursor: pointer;
 }
 
-.activecall-route {
+
+/* Route */
+.ac-route {
   text-align: center;
-  padding: 12px 20px 8px;
-  font-size: 1rem;
-  color: #495057;
+  color: #8b8b8b;
+  font-size: 13px;
+  padding: 0 18px 8px;
 }
 
-.activecall-rate {
+/* Rate + timer row */
+.ac-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px 8px;
+}
+
+.ac-rate-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f3f3;
+  color: #111;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ac-timer {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Status pill */
+.ac-status {
+  margin: 0 18px 10px;
+  border-radius: 10px;
   text-align: center;
-  font-size: 2.2rem;
-  font-weight: bold;
-  color: #0d6efd;
-  margin: 8px 0;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  border: 1px solid transparent;
 }
 
-.activecall-timer {
-  text-align: center;
-  font-size: 3rem;
-  font-weight: bold;
-  color: #212529;
-  margin: 8px 0 16px;
-  font-family: ui-monospace, monospace;
+.ac-status.is-calling {
+  background: #fff2c7;
+  color: #7a5b00;
+  border-color: #ffe7a1;
 }
 
-.activecall-status-bar {
-  text-align: center;
-  padding: 10px;
-  font-weight: 500;
-  font-size: 1.1rem;
-  background: transparent;
-  transition: 0.3s;
+.ac-status.is-live {
+  background: #cfead3;
+  color: #1f5c2a;
+  border-color: #bfe3c6;
 }
 
-.activecall-status-bar.connecting {
-  background: #fff9c4;
-  color: #856404;
+/* Transcript toggle row */
+.ac-transcript-toggle {
+  margin: 0 18px 12px;
+  width: calc(100% - 36px);
+  border-radius: 10px;
+  border: 1px solid #e3e3e3;
+  background: #f6f6f6;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
 }
 
-.activecall-transcript-toggle {
-  text-align: center;
-  margin: 12px 0;
+.ac-toggle-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.activecall-transcript-area {
-  margin: 0 20px 16px;
-  padding: 12px;
-  background: #f8f9fa;
+.ac-toggle-icon {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.ac-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e53935;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+  transform: translateY(-1px);
+}
+
+.ac-toggle-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 20px;
+  color: #444;
+}
+
+/* Legend row (Broker / AI / Active + speaker icon) */
+.ac-legend-row {
+  padding: 0 18px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ac-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  color: #6a6a6a;
+  font-weight: 600;
+}
+
+.ac-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ac-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.ac-dot.broker {
+  background: #1e62ff;
+}
+
+.ac-dot.ai {
+  background: #bdbdbd;
+}
+
+.ac-dot.active {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #36b24a;
+}
+
+.ac-sound-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid #e3e3e3;
+  background: #ffffff;
+
+  display: grid;
+  place-items: center;
+
+  cursor: pointer;
+  color: #111;
+  padding: 0;
+  line-height: 1; /* key */
+}
+
+.ac-sound-btn i {
+  font-size: 14px;
+  line-height: 1;
+  display: block;
+}
+
+
+/* Transcript body */
+.ac-transcript {
+  margin: 0 18px 12px;
+  background: #ffffff;
   border-radius: 12px;
-  min-height: 60px;
-  font-size: 0.9rem;
-  color: #6c757d;
+  border: 1px solid #ececec;
+  padding: 10px;
+  max-height: 270px;
+  overflow: auto;
 }
 
-.activecall-buttons {
+.ac-msg {
+  margin-bottom: 10px;
+}
+
+.ac-bubble {
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.25rem;
+  white-space: pre-wrap;
+}
+
+.ac-bubble-broker {
+  background: #1e62ff;
+  color: #ffffff;
+  border-top-left-radius: 10px;
+}
+
+.ac-bubble-ai {
+  background: #efefef;
+  color: #111;
+  border-top-right-radius: 10px;
+}
+
+.ac-msg-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8b8b8b;
+}
+
+/* Bottom buttons */
+.ac-actions {
+  padding: 0 18px 16px;
   display: flex;
   gap: 12px;
-  padding: 0 20px;
-  justify-content: center;
 }
 
-.join-call-btn {
+.ac-btn {
   flex: 1;
-  font-weight: 600;
-  padding: 12px;
-  border-radius: 12px;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
 }
 
-.end-call-btn {
-  flex: 1;
-  font-weight: 600;
-  padding: 12px;
-  border-radius: 12px;
+.ac-btn-join {
+  background: #1e62ff;
+  color: #fff;
+}
+
+.ac-btn-end {
+  background: #e53935;
+  color: #fff;
+}
+
+.ac-transcript {
+  scroll-behavior: smooth;
+}
+
+.ac-copy-btn {
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(92, 91, 91, 0.06);
+  color: black;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ac-copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
