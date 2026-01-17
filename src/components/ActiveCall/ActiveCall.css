@@ -9,11 +9,9 @@
   user-select: none;
   overflow: hidden;
 
-  /* gives it the white “card” feel from screenshots */
   border: 1px solid #efefef;
 }
 
-/* when transcript is open, panel grows like screenshot */
 .activecall-panel.is-expanded {
   width: 360px;
 }
@@ -30,6 +28,12 @@
   font-weight: 700;
   font-size: 18px;
   color: #111;
+
+  /* ✅ prevents long carrier names from breaking layout */
+  padding: 0 34px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ac-close {
@@ -53,32 +57,56 @@
   cursor: pointer;
 }
 
+/* ✅ Phone line (new) */
+.ac-phone {
+  text-align: center;
+  color: #111;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 18px 4px;
 
-/* Route */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Route (optional) */
 .ac-route {
   text-align: center;
   color: #8b8b8b;
   font-size: 13px;
   padding: 0 18px 8px;
+
+  /* ✅ prevents ugly wrapping stacks */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Rate + timer row */
+/* Meta + timer row */
 .ac-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 0 18px 8px;
 }
 
+/* ✅ Meta pill tweaks so it never crushes timer */
 .ac-rate-pill {
   display: inline-flex;
   align-items: center;
+  max-width: 240px;
   padding: 4px 10px;
   border-radius: 999px;
   background: #f3f3f3;
   color: #111;
   font-weight: 600;
   font-size: 12px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ac-timer {
@@ -86,6 +114,7 @@
   font-size: 24px;
   font-weight: 700;
   color: #111;
+  flex-shrink: 0;
 }
 
 /* Status pill */
@@ -109,6 +138,12 @@
   background: #cfead3;
   color: #1f5c2a;
   border-color: #bfe3c6;
+}
+
+.ac-status.is-ended {
+  background: #f4d5d5;
+  color: #8a1f1f;
+  border-color: #efc1c1;
 }
 
 /* Transcript toggle row */
@@ -164,7 +199,7 @@
   color: #444;
 }
 
-/* Legend row (Broker / AI / Active + speaker icon) */
+/* Legend row */
 .ac-legend-row {
   padding: 0 18px 6px;
   display: flex;
@@ -194,19 +229,13 @@
   display: inline-block;
 }
 
-.ac-dot.broker {
+/* ✅ carrier vs ai keys */
+.ac-dot.carrier {
   background: #1e62ff;
 }
 
 .ac-dot.ai {
   background: #bdbdbd;
-}
-
-.ac-dot.active {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #36b24a;
 }
 
 .ac-sound-btn {
@@ -222,7 +251,7 @@
   cursor: pointer;
   color: #111;
   padding: 0;
-  line-height: 1; /* key */
+  line-height: 1;
 }
 
 .ac-sound-btn i {
@@ -230,7 +259,6 @@
   line-height: 1;
   display: block;
 }
-
 
 /* Transcript body */
 .ac-transcript {
@@ -241,6 +269,7 @@
   padding: 10px;
   max-height: 270px;
   overflow: auto;
+  scroll-behavior: smooth;
 }
 
 .ac-msg {
@@ -255,7 +284,8 @@
   white-space: pre-wrap;
 }
 
-.ac-bubble-broker {
+/* ✅ Fix: carrier bubbles (not broker) */
+.ac-bubble-carrier {
   background: #1e62ff;
   color: #ffffff;
   border-top-left-radius: 10px;
@@ -290,22 +320,13 @@
   cursor: pointer;
 }
 
-.ac-btn-join {
-  background: #1e62ff;
-  color: #fff;
-}
-
 .ac-btn-end {
   background: #e53935;
   color: #fff;
 }
 
-.ac-transcript {
-  scroll-behavior: smooth;
-}
-
 .ac-copy-btn {
-  border: 1px solid rgba(255,255,255,0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(92, 91, 91, 0.06);
   color: black;
   border-radius: 10px;

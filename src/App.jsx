@@ -1,10 +1,10 @@
 import { useState } from "react";
-import CallBrokerModal from "./components/CallBrokerModal/CallBrokerModal";
+import CallCarrierModal from "./components/CallCarrierModal/CallCarrierModal";
 
 function App() {
 
   return (
-    <CallBrokerModal />
+    <CallCarrierModal />
   );
 }
 

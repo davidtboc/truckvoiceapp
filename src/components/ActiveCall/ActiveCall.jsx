@@ -83,13 +83,20 @@ export default function ActiveCall({
   vapiCallId,
   monitorUrl,
   onClose,
-  brokerName = "Active Call",
-  origin = "Unknown Origin",
-  destination = "Unknown Destination",
-  rate = "$?.??",
+
+  carrierName = "Active Call",
+
+  // ✅ carrier onboarding fields
+  phone = "",
+  meta = "",
+
+  // optional “route-like” line (only show if meaningful)
+  origin = "",
+  destination = "",
+
   initialPosition = { top: 100, left: 20 },
 
-  // ✅ optional: if you ever pass it later
+  // optional: if you ever pass it later
   initialControlUrl = null
 }) {
   const [seconds, setSeconds] = useState(0);
@@ -130,9 +137,63 @@ export default function ActiveCall({
     };
   }, []);
 
-  // ✅ Display route using full state names
-  const originDisplay = useMemo(() => expandStateAbbrev(origin), [origin]);
-  const destinationDisplay = useMemo(() => expandStateAbbrev(destination), [destination]);
+  const isMeaningful = (v) => {
+    const s = String(v || "").trim();
+    if (!s) return false;
+    const low = s.toLowerCase();
+    if (s === "-") return false;
+    if (low === "unknown origin" || low === "unknown destination") return false;
+    if (low === "$?.??") return false;
+    return true;
+  };
+
+  // ✅ NEW: only show ONE concise chunk inside the pill so it never bloats/cuts off
+  const pickMetaPill = (metaStr) => {
+    const raw = String(metaStr || "").trim();
+    if (!raw) return "";
+
+    // Split on bullets/pipes — matches your "MC ... • USDOT ... • PU ..."
+    const parts = raw
+      .split(/\s*[•|]\s*/g)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (!parts.length) return "";
+
+    const prefer = (regex) => parts.find((p) => regex.test(p)) || "";
+
+    return (
+      prefer(/^MC\b/i) ||
+      prefer(/^USDOT\b/i) ||
+      prefer(/^PU\b/i) ||
+      prefer(/^Drivers?\b/i) ||
+      parts[0]
+    );
+  };
+
+  const clampPillText = (s, maxLen = 22) => {
+    const t = String(s || "").trim();
+    if (!t) return "";
+    if (t.length <= maxLen) return t;
+    return t.slice(0, maxLen - 1) + "…";
+  };
+
+  const pillText = useMemo(() => {
+    if (!isMeaningful(meta)) return "";
+    const picked = pickMetaPill(meta);
+    return clampPillText(picked, 22);
+  }, [meta]);
+
+  const showRoute = isMeaningful(origin) || isMeaningful(destination);
+
+  const originDisplay = useMemo(
+    () => (isMeaningful(origin) ? expandStateAbbrev(origin) : ""),
+    [origin]
+  );
+  const destinationDisplay = useMemo(
+    () => (isMeaningful(destination) ? expandStateAbbrev(destination) : ""),
+    [destination]
+  );
 
   // Timer — STOP when call ends
   useEffect(() => {
@@ -141,7 +202,7 @@ export default function ActiveCall({
     return () => clearInterval(interval);
   }, [isCallEnded]);
 
-  // Poll server for call status so we detect broker hangup even if webhook/event is missed
+  // Poll server for call status so we detect carrier hangup even if webhook/event is missed
   useEffect(() => {
     if (!vapiCallId || isCallEnded) return;
 
@@ -175,7 +236,7 @@ export default function ActiveCall({
   const normalizeRole = (raw) => {
     const r = String(raw || "").toLowerCase().trim();
     if (["assistant", "ai", "agent", "bot"].includes(r)) return "ai";
-    if (["user", "customer", "caller", "human", "broker"].includes(r)) return "broker";
+    if (["user", "customer", "caller", "human", "broker", "carrier"].includes(r)) return "carrier";
     return null;
   };
 
@@ -233,13 +294,13 @@ export default function ActiveCall({
       .filter(Boolean);
 
     const looksLikePrefixed = lines.some((l) =>
-      /^(AI|Assistant|User|Broker|Customer)\s*:\s*/i.test(l)
+      /^(AI|Assistant|User|Broker|Carrier|Customer)\s*:\s*/i.test(l)
     );
 
     if (!looksLikePrefixed) {
       return [
         {
-          role: "broker",
+          role: "carrier",
           text: raw,
           time: toDate(fallbackTimestamp ?? Date.now())
         }
@@ -248,14 +309,14 @@ export default function ActiveCall({
 
     const out = [];
     for (const line of lines) {
-      const m = line.match(/^(AI|Assistant|User|Broker|Customer)\s*:\s*(.*)$/i);
+      const m = line.match(/^(AI|Assistant|User|Broker|Carrier|Customer)\s*:\s*(.*)$/i);
       if (!m) continue;
 
       const who = String(m[1] || "").toLowerCase();
       const text = String(m[2] || "").trim();
       if (!text) continue;
 
-      const role = who === "ai" || who === "assistant" ? "ai" : "broker";
+      const role = who === "ai" || who === "assistant" ? "ai" : "carrier";
       const time = toDate(fallbackTimestamp ?? Date.now());
 
       const key = `${role}::${text}`;
@@ -307,7 +368,6 @@ export default function ActiveCall({
 
   const isEndedEvent = (eventOrPayload) => {
     const msg = eventOrPayload?.message ?? eventOrPayload ?? {};
-
     const type = String(msg?.type ?? eventOrPayload?.type ?? "").toLowerCase().trim();
 
     const status = String(
@@ -426,7 +486,8 @@ export default function ActiveCall({
     }
   }, [messages, showTranscript]);
 
-  const formatTime = (date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (date) =>
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const callTime = () => {
     const m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -460,7 +521,9 @@ export default function ActiveCall({
   }, []);
 
   const handleMouseDown = (e) => {
-    const interactive = e.target.closest("button, a, input, textarea, select, [role='button']");
+    const interactive = e.target.closest(
+      "button, a, input, textarea, select, [role='button']"
+    );
     if (interactive || e.button !== 0) return;
 
     const panel = panelRef.current;
@@ -514,7 +577,7 @@ export default function ActiveCall({
   const transcriptCopyText = useMemo(() => {
     if (!messages || messages.length === 0) return "";
     return messages
-      .map((m) => `${m.role === "ai" ? "AI Dispatcher" : "Broker"}: ${m.text}`)
+      .map((m) => `${m.role === "ai" ? "AI Dispatcher" : "Carrier"}: ${m.text}`)
       .join("\n");
   }, [messages]);
 
@@ -527,7 +590,7 @@ export default function ActiveCall({
     }
   };
 
-  // ✅ UPDATED: allow endCall even when controlUrl not available yet (backend will fetch it)
+  // ✅ allow endCall even when controlUrl not available yet (backend can fetch it)
   const endCall = async () => {
     if (isCallEnded || isEndingCall) return false;
 
@@ -599,18 +662,26 @@ export default function ActiveCall({
       onMouseDown={handleMouseDown}
     >
       <div className="ac-header">
-        <div className="ac-title">{brokerName}</div>
+        <div className="ac-title">{carrierName}</div>
         <button type="button" onClick={handleClose} className="ac-close" aria-label="Close">
           ×
         </button>
       </div>
 
-      <div className="ac-route">
-        {originDisplay} → {destinationDisplay}
-      </div>
+      {/* ✅ Always useful */}
+      {isMeaningful(phone) ? <div className="ac-phone">{phone}</div> : null}
+
+      {/* ✅ Only show if present */}
+      {showRoute ? (
+        <div className="ac-route">
+          {originDisplay}
+          {originDisplay && destinationDisplay ? " → " : ""}
+          {destinationDisplay}
+        </div>
+      ) : null}
 
       <div className="ac-meta">
-        <div className="ac-rate-pill">{rate}</div>
+        {isMeaningful(pillText) ? <div className="ac-rate-pill">{pillText}</div> : null}
         <div className="ac-timer">{callTime()}</div>
       </div>
 
@@ -624,7 +695,9 @@ export default function ActiveCall({
           <span className="ac-toggle-text">
             {showTranscript ? "Hide Transcript" : "Show Transcript"}
           </span>
-          {!showTranscript && unreadCount > 0 && <span className="ac-unread-badge">{unreadCount}</span>}
+          {!showTranscript && unreadCount > 0 && (
+            <span className="ac-unread-badge">{unreadCount}</span>
+          )}
         </span>
         <span className="ac-toggle-right" aria-hidden="true">
           <i className={`bi ${showTranscript ? "bi-chevron-up" : "bi-chevron-down"}`} />
@@ -636,8 +709,8 @@ export default function ActiveCall({
           <div className="ac-legend-row">
             <div className="ac-legend">
               <span className="ac-legend-item">
-                <span className="ac-dot broker" />
-                <span>Broker</span>
+                <span className="ac-dot carrier" />
+                <span>Carrier</span>
               </span>
               <span className="ac-legend-item">
                 <span className="ac-dot ai" />
@@ -668,7 +741,7 @@ export default function ActiveCall({
               <div key={i} className={`ac-msg ac-msg-${msg.role}`}>
                 <div className={`ac-bubble ac-bubble-${msg.role}`}>{msg.text}</div>
                 <div className="ac-msg-meta">
-                  {msg.role === "broker" ? "Broker" : "AI Dispatcher"}&nbsp;&nbsp;
+                  {msg.role === "carrier" ? "Carrier" : "AI Dispatcher"}&nbsp;&nbsp;
                   {formatTime(msg.time)}
                 </div>
               </div>
@@ -684,15 +757,6 @@ export default function ActiveCall({
       )}
 
       <div className="ac-actions">
-        {/* <button
-          className="ac-btn ac-btn-join"
-          type="button"
-          onClick={() => monitorUrl && window.open(monitorUrl, "_blank")}
-          disabled={!monitorUrl}
-        >
-          Join Call
-        </button> */}
-
         <button
           className="ac-btn ac-btn-end"
           type="button"

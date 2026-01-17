@@ -1,0 +1,232 @@
+.tv-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 1040; /* below modal */
+}
+
+.modal.show.d-block {
+  z-index: 1050; /* above backdrop */
+}
+
+/* Force wide modal - overrides Bootstrap's max-width with higher specificity + !important */
+.tv-modal-dialog {
+  max-width: 95vw !important; /* Critical: override Bootstrap's max-width */
+  width: 95vw !important;
+  margin: 1.75rem auto !important;
+}
+
+/* Mobile */
+@media (max-width: 767.98px) {
+  .tv-modal-dialog {
+    width: calc(100% - 16px) !important;
+    max-width: none !important;
+    margin: 8px auto !important;
+  }
+
+  .modal-body {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .tv-modal-dialog {
+    width: 900px !important;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+  .tv-modal-dialog {
+    width: 1200px !important;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1400px) {
+  .tv-modal-dialog {
+    width: 1400px !important;
+  }
+}
+
+/* Ultrawide */
+@media (min-width: 1600px) {
+  .tv-modal-dialog {
+    width: 800px !important; /* Very wide — adjust down if too big for you */
+  }
+}
+
+/* Better inner padding on larger screens */
+.modal-body {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+.tv-modal-content {
+  border-radius: 18px;
+  padding: 0.5rem;
+}
+
+.tv-app-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(13, 110, 253, 0.15),
+    rgba(13, 110, 253, 0.05)
+  );
+  border: 1px solid rgba(13, 110, 253, 0.25);
+}
+
+.tv-app-badge i {
+  font-size: 20px;
+}
+
+.tv-hint {
+  border-radius: 14px;
+}
+
+.tv-preview {
+  border-radius: 16px;
+  background: rgba(248, 249, 250, 0.8);
+}
+
+.tv-pre {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+/* ============================= */
+/* Searchable dropdown (TV)      */
+/* ============================= */
+
+.tv-select {
+  position: relative;
+}
+
+.tv-select-trigger {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding-right: 12px;
+  background: #fff;
+}
+
+.tv-select-trigger.is-open {
+  border-color: rgba(13, 110, 253, 0.65);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.tv-select-trigger-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-select-trigger-text.is-placeholder {
+  color: #6c757d;
+}
+
+.tv-select-chevron {
+  opacity: 0.75;
+  font-size: 14px;
+}
+
+.tv-select-menu {
+  position: absolute;
+  z-index: 2000;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.tv-select-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(248, 249, 250, 0.85);
+}
+
+.tv-select-search i {
+  opacity: 0.7;
+}
+
+.tv-select-search-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.tv-select-options {
+  max-height: 240px; /* prevents dropdown from getting too tall */
+  overflow: auto;
+  padding: 6px;
+}
+
+.tv-select-option {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 10px 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.tv-select-option:hover {
+  background: rgba(13, 110, 253, 0.08);
+}
+
+.tv-select-option.is-selected {
+  background: rgba(13, 110, 253, 0.12);
+}
+
+.tv-select-option-custom {
+  background: rgba(25, 135, 84, 0.08);
+}
+
+.tv-select-option-custom:hover {
+  background: rgba(25, 135, 84, 0.12);
+}
+
+.tv-select-empty {
+  padding: 14px 12px;
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.tv-select-empty kbd {
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  color: black;
+  background: #fff;
+  font-size: 12px;
+}

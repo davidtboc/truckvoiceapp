@@ -130,12 +130,7 @@ async function postEndCallWithRetries(controlUrl) {
   const url = normalizeControlUrl(controlUrl);
 
   // A few quick retries handles transient 502/503/504
-  const attempts = [
-    { wait: 0 },
-    { wait: 350 },
-    { wait: 900 },
-    { wait: 1800 }
-  ];
+  const attempts = [{ wait: 0 }, { wait: 350 }, { wait: 900 }, { wait: 1800 }];
 
   let last = null;
 
@@ -230,28 +225,30 @@ app.post("/webhook/vapi", (req, res) => {
 // Start Vapi outbound call
 // --------------------
 app.post("/api/start-vapi-call", async (req, res) => {
-  const { brokerPhone, formData } = req.body || {};
+  // ✅ renamed to carrierPhone (frontend now sends carrierPhone)
+  const { carrierPhone, formData } = req.body || {};
 
-const variableValues = {
-  dispatcherName: formData?.dispatcherName || "Dispatcher",
-  origin: formData?.origin || "Unknown Origin",
-  destination: formData?.destination || "Unknown Destination",
+  if (!carrierPhone) {
+    return res.status(400).json({ success: false, error: "Missing carrierPhone" });
+  }
 
-  // NEW (spoken versions)
-  originSpoken: formData?.originSpoken || formData?.origin || "Unknown Origin",
-  destinationSpoken: formData?.destinationSpoken || formData?.destination || "Unknown Destination",
+  // ✅ UPDATED: use CallCarrierModal fields
+  const variableValues = {
+    dispatcherName: formData?.dispatcherName || "Dispatcher",
 
-  totalMileage: formData?.totalMileage || "-",
-  deadheadMileage: formData?.deadheadMileage || "-",
-  pricePerMile: formData?.pricePerMile || "-",
-  tolls: formData?.tolls || "-",
-  pickupTime: formData?.pickupTime || "-",
-  dropoffTime: formData?.dropoffTime || "-",
-  weatherForecast: formData?.weatherForecast || "-",
-  mcNumber: formData?.mcNumber || "-",
-  commodity: formData?.commodity || "-",
-  strapsOrCover: formData?.strapsOrCover || "unknown"
-};
+    entityType: formData?.entityType || "-",
+    usdotNumber: formData?.usdotNumber || "-",
+    dateFound: formData?.dateFound || "-",
+    opStates: formData?.opStates || "-",
+    companyName: formData?.companyName || "-",
+    mcNumber: formData?.mcNumber || "-",
+    address: formData?.address || "-",
+    carrierPhoneNumber: formData?.carrierPhoneNumber || "-",
+    powerUnits: formData?.powerUnits || "-",
+    drivers: formData?.drivers || "-",
+    cargoCarried: formData?.cargoCarried || "-",
+    categoryType: formData?.categoryType || "-"
+  };
 
   try {
     const response = await fetch("https://api.vapi.ai/call", {
@@ -264,7 +261,8 @@ const variableValues = {
         type: "outboundPhoneCall",
         assistantId: process.env.VAPI_ASSISTANT_ID,
         phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-        customer: { number: brokerPhone },
+        customer: { number: carrierPhone },
+        maxDurationSeconds: 3600,
         assistantOverrides: { variableValues }
       })
     });
@@ -358,7 +356,6 @@ app.post("/api/end-vapi-call", async (req, res) => {
     return res.status(500).json({ success: false, error: err?.message || "Server error" });
   }
 });
-
 
 // --------------------
 // Get call status (server-to-server)
